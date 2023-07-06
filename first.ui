@@ -238,7 +238,7 @@
                    <string notr="true">background-color: rgb(24, 24, 24);</string>
                   </property>
                   <property name="currentIndex">
-                   <number>1</number>
+                   <number>2</number>
                   </property>
                   <widget class="QWidget" name="landing_page">
                    <property name="styleSheet">
@@ -446,7 +446,76 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <layout class="QVBoxLayout" name="browse_page_layout"/>
+                     <layout class="QVBoxLayout" name="browse_page_layout" stretch="1,20">
+                      <item>
+                       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,10,5">
+                        <item>
+                         <widget class="QPushButton" name="exit_directory_button">
+                          <property name="styleSheet">
+                           <string notr="true">color: rgb(161, 168, 166);</string>
+                          </property>
+                          <property name="text">
+                           <string>&lt;- BACK</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="add_button">
+                          <property name="styleSheet">
+                           <string notr="true">color: rgb(161, 168, 166);</string>
+                          </property>
+                          <property name="text">
+                           <string>ADD</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="cueent_diretory_label">
+                          <property name="styleSheet">
+                           <string notr="true">color: rgb(161, 168, 166);</string>
+                          </property>
+                          <property name="text">
+                           <string>TextLabel</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <spacer name="horizontalSpacer_4">
+                          <property name="orientation">
+                           <enum>Qt::Horizontal</enum>
+                          </property>
+                          <property name="sizeHint" stdset="0">
+                           <size>
+                            <width>40</width>
+                            <height>20</height>
+                           </size>
+                          </property>
+                         </spacer>
+                        </item>
+                       </layout>
+                      </item>
+                      <item>
+                       <layout class="QVBoxLayout" name="scroll_view_layout">
+                        <item>
+                         <widget class="QScrollArea" name="scrollArea">
+                          <property name="widgetResizable">
+                           <bool>true</bool>
+                          </property>
+                          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                           <property name="geometry">
+                            <rect>
+                             <x>0</x>
+                             <y>0</y>
+                             <width>717</width>
+                             <height>502</height>
+                            </rect>
+                           </property>
+                          </widget>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                     </layout>
                     </item>
                    </layout>
                   </widget>

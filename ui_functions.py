@@ -173,6 +173,11 @@ class UIFunctions:
             return
 
         self.sendFileMessage(selected_file)
+        msg, status = self.receiveMessage()
+        if status != 0:
+            print("Nu a mers")
+            return
+
         self.listCurrentDirectory()
 
     def listCurrentDirectory(self):
@@ -183,14 +188,16 @@ class UIFunctions:
 
         self.resetBrowser()
 
-        msgContents = (i.split(":") for i in msg.decode().split(";"))
+        msgContents = [i.split(":") for i in msg.decode().split(";")]
 
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName("verticalLayout")
 
-        for elem in msgContents:
+        currentDir = msgContents[0][1]
+        self.ui.cueent_diretory_label.setText(currentDir)
+        for elem in msgContents[1:]:
             if elem[0] == "":
                 continue
             try:
