@@ -7,3 +7,4 @@ class Operations(enum.Enum):
     GetFile = 2
     GoInDirectory = 3
     GoOutDirectory = 4
+    Delete = 5

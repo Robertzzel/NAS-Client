@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import PySide6
 # Form implementation generated from reading ui file 'first.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.1
@@ -13,9 +13,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 class MainUI(QtWidgets.QWidget):
     def __init__(self, MainWindow):
         super().__init__()
-
-        MainWindow.setMinimumSize(QtCore.QSize(1280, 720))
-        MainWindow.setMaximumSize(QtCore.QSize(1280, 720))
+        MainWindow.setMinimumSize(QtCore.QSize(1000, 600))
+        MainWindow.setMaximumSize(QtCore.QSize(1000, 600))
         MainWindow.setStyleSheet("background-color: rgb(17, 17, 17);")
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setStyleSheet("")
@@ -39,7 +38,7 @@ class MainUI(QtWidgets.QWidget):
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.top_bar_layout.addItem(spacerItem)
         self.minimze_button = QtWidgets.QPushButton(self.top_bar_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.minimze_button.sizePolicy().hasHeightForWidth())
@@ -194,6 +193,39 @@ class MainUI(QtWidgets.QWidget):
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.browse_page_layout = QtWidgets.QVBoxLayout()
         self.browse_page_layout.setObjectName("browse_page_layout")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.exit_directory_button = QtWidgets.QPushButton(self.browse_page)
+        self.exit_directory_button.setStyleSheet("color: rgb(161, 168, 166);")
+        self.exit_directory_button.setObjectName("exit_directory_button")
+        self.horizontalLayout_2.addWidget(self.exit_directory_button)
+        self.add_button = QtWidgets.QPushButton(self.browse_page)
+        self.add_button.setStyleSheet("color: rgb(161, 168, 166);")
+        self.add_button.setObjectName("add_button")
+        self.horizontalLayout_2.addWidget(self.add_button)
+        self.cueent_diretory_label = QtWidgets.QLabel(self.browse_page)
+        self.cueent_diretory_label.setStyleSheet("color: rgb(161, 168, 166);")
+        self.cueent_diretory_label.setObjectName("cueent_diretory_label")
+        self.horizontalLayout_2.addWidget(self.cueent_diretory_label)
+        spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem8)
+        self.horizontalLayout_2.setStretch(0, 1)
+        self.horizontalLayout_2.setStretch(3, 10)
+        self.browse_page_layout.addLayout(self.horizontalLayout_2)
+        self.scroll_view_layout = QtWidgets.QVBoxLayout()
+        self.scroll_view_layout.setObjectName("scroll_view_layout")
+        self.scrollArea = QtWidgets.QScrollArea(self.browse_page)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setVerticalScrollBarPolicy(PySide6.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scrollArea.setObjectName("scrollArea")
+        self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 717, 502))
+        self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents_2)
+        self.scroll_view_layout.addWidget(self.scrollArea)
+        self.browse_page_layout.addLayout(self.scroll_view_layout)
+        self.browse_page_layout.setStretch(0, 1)
+        self.browse_page_layout.setStretch(1, 20)
         self.verticalLayout_6.addLayout(self.browse_page_layout)
         self.stackedWidget.addWidget(self.browse_page)
         self.contents_layout.addWidget(self.stackedWidget)
@@ -209,7 +241,7 @@ class MainUI(QtWidgets.QWidget):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -224,12 +256,6 @@ class MainUI(QtWidgets.QWidget):
         self.email_label.setText(_translate("MainWindow", "EMAIL"))
         self.password_label.setText(_translate("MainWindow", "PASSWORD"))
         self.login_button.setText(_translate("MainWindow", "LOGIN"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = MainUI(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+        self.exit_directory_button.setText(_translate("MainWindow", "<- BACK"))
+        self.add_button.setText(_translate("MainWindow", "ADD"))
+        self.cueent_diretory_label.setText(_translate("MainWindow", "TextLabel"))
