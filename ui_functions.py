@@ -4,7 +4,7 @@ import ssl
 from typing import IO
 
 from PySide6 import QtWidgets
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from app import MainUI
 from operations import Operations
@@ -19,10 +19,34 @@ class UIFunctions:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(100)
         self.tlsSocket = ssl.wrap_socket(self.sock, ssl_version=ssl.PROTOCOL_TLSv1_2)
-        #try:
-            #self.tlsSocket.connect(("licenta-robert-1.go.ro", 4040))
-        #except Exception as e:
-        self.tlsSocket.connect(("localhost", 4040))
+
+        res = self.connectSocket()
+        if not res:
+            message_box = QMessageBox()
+            message_box.setText("The programming tried to connect to the server but it did not work.")
+            message_box.setWindowTitle("Cannot connect to server")
+            message_box.setIcon(QMessageBox.Icon.Information)
+            message_box.exec()
+            raise Exception("cCannot connect")
+
+
+    def connectSocket(self):
+        connected = False
+        try:
+            self.tlsSocket.connect(("licenta-robert-1.go.ro", 4040))
+            connected = True
+        except Exception:
+            pass
+
+        if connected:
+            return True
+
+        try:
+            self.tlsSocket.connect(("192.168.1.5", 4040))
+        except Exception as e:
+            return False
+
+        return True
 
     def setup(self):
         # top buttons
