@@ -29,24 +29,12 @@ class UIFunctions:
             message_box.exec()
             raise Exception("cCannot connect")
 
-
     def connectSocket(self):
-        connected = False
-        try:
-            self.tlsSocket.connect(("licenta-robert-1.go.ro", 4040))
-            connected = True
-        except Exception:
-            pass
-
-        if connected:
-            return True
-
         try:
             self.tlsSocket.connect(("192.168.1.5", 4040))
+            return True
         except Exception as e:
             return False
-
-        return True
 
     def setup(self):
         # top buttons
@@ -69,6 +57,16 @@ class UIFunctions:
             message.extend(self.tlsSocket.recv(2048))
 
         return message[1:], message[0]
+
+    def receiveFileMessage(self, file: IO):
+        messageLengthSize = self.tlsSocket.recv(10)
+        messageSize = int(messageLengthSize.decode())
+        receivedBytes = 0
+
+        while receivedBytes < messageSize:
+            message = self.tlsSocket.recv(2048)
+            file.write(message)
+            receivedBytes += len(message)
 
     def sendMessage(self, message: bytes):
         msgSize = str(len(message)).rjust(10, '0').encode()
@@ -111,14 +109,15 @@ class UIFunctions:
         horizontalLayout.addWidget(sizeLabel)
         sizeLabel.setText(name)
 
-        if type == "File":
-            downloadButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
-            downloadButton.setObjectName("pushButton")
-            downloadButton.setStyleSheet("color: rgb(161, 168, 166);")
-            downloadButton.setText("DOWNLOAD")
-            downloadButton.clicked.connect(lambda checked=True, id=name: self.downloadFile(id))
-            horizontalLayout.addWidget(downloadButton)
-        else:
+
+        downloadButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
+        downloadButton.setObjectName("pushButton")
+        downloadButton.setStyleSheet("color: rgb(161, 168, 166);")
+        downloadButton.setText("DOWNLOAD")
+        downloadButton.clicked.connect(lambda checked=True, id=name: self.downloadFile(id))
+        horizontalLayout.addWidget(downloadButton)
+
+        if type != "File":
             goInDirectoryButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
             goInDirectoryButton.setObjectName("deleteVideoButton")
             goInDirectoryButton.setText("GO IN")
@@ -144,12 +143,9 @@ class UIFunctions:
         directory = dialog.selectedFiles()[0] + "/"
         self.sendMessage(str(Operations.GetFile.value).encode())
         self.sendMessage(file.encode())
-        msg, status = self.receiveMessage()
-        if status != 0:
-            return
 
         with open(f"{directory}{file}", "wb") as f:
-            f.write(msg)
+            self.receiveFileMessage(f)
 
     def goInDirectory(self, dir: str):
         self.sendMessage(str(Operations.GoInDirectory.value).encode())
