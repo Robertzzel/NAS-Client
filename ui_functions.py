@@ -29,11 +29,11 @@ class UIFunctions:
             message_box.setWindowTitle("Cannot connect to server")
             message_box.setIcon(QMessageBox.Icon.Information)
             message_box.exec()
-            raise Exception("cCannot connect")
+            raise Exception("Cannot connect")
 
     def connectSocket(self):
         try:
-            self.tlsSocket.connect(("localhost", 4040))
+            self.tlsSocket.connect(("192.168.1.5", 4040))
             return True
         except Exception as e:
             return False
@@ -46,10 +46,26 @@ class UIFunctions:
         # side bar buttons
         self.ui.login_page_button.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
         self.ui.browse_page_button.clicked.connect(self.setBrowserPage)
+        self.ui.browse_page_button.setEnabled(False)
+
+        #login page
+        self.ui.login_button.clicked.connect(self.login)
 
         self.ui.exit_directory_button.clicked.connect(self.goOutDirectory)
         self.ui.add_file_button.clicked.connect((lambda checked=True, id=False: self.uploadFileOrDirectory(id)))
         self.ui.add_directory_button.clicked.connect((lambda checked=True, id=True: self.uploadFileOrDirectory(id)))
+
+    def login(self):
+        username = self.ui.lineEdit.text()
+        password = self.ui.lineEdit_2.text()
+
+        self.sendMessage(f"{username},{password}".encode())
+        msg, status = self.receiveMessage()
+        if status != 0:
+            print(msg)
+            return
+
+        self.ui.browse_page_button.setEnabled(True)
 
     def receiveMessage(self):
         message = bytearray()
