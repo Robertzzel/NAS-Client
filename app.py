@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import PySide6
+
 # Form implementation generated from reading ui file 'first.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.1
@@ -199,10 +199,14 @@ class MainUI(QtWidgets.QWidget):
         self.exit_directory_button.setStyleSheet("color: rgb(161, 168, 166);")
         self.exit_directory_button.setObjectName("exit_directory_button")
         self.horizontalLayout_2.addWidget(self.exit_directory_button)
-        self.add_button = QtWidgets.QPushButton(self.browse_page)
-        self.add_button.setStyleSheet("color: rgb(161, 168, 166);")
-        self.add_button.setObjectName("add_button")
-        self.horizontalLayout_2.addWidget(self.add_button)
+        self.add_file_button = QtWidgets.QPushButton(self.browse_page)
+        self.add_file_button.setStyleSheet("color: rgb(161, 168, 166);")
+        self.add_file_button.setObjectName("add_file_button")
+        self.horizontalLayout_2.addWidget(self.add_file_button)
+        self.add_directory_button = QtWidgets.QPushButton(self.browse_page)
+        self.add_directory_button.setStyleSheet("color: rgb(161, 168, 166);")
+        self.add_directory_button.setObjectName("add_directory_button")
+        self.horizontalLayout_2.addWidget(self.add_directory_button)
         self.cueent_diretory_label = QtWidgets.QLabel(self.browse_page)
         self.cueent_diretory_label.setStyleSheet("color: rgb(161, 168, 166);")
         self.cueent_diretory_label.setObjectName("cueent_diretory_label")
@@ -210,14 +214,13 @@ class MainUI(QtWidgets.QWidget):
         spacerItem8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem8)
         self.horizontalLayout_2.setStretch(0, 1)
-        self.horizontalLayout_2.setStretch(2, 10)
-        self.horizontalLayout_2.setStretch(3, 5)
+        self.horizontalLayout_2.setStretch(3, 10)
+        self.horizontalLayout_2.setStretch(4, 5)
         self.browse_page_layout.addLayout(self.horizontalLayout_2)
         self.scroll_view_layout = QtWidgets.QVBoxLayout()
         self.scroll_view_layout.setObjectName("scroll_view_layout")
         self.scrollArea = QtWidgets.QScrollArea(self.browse_page)
         self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setVerticalScrollBarPolicy(PySide6.QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 717, 502))
@@ -258,5 +261,6 @@ class MainUI(QtWidgets.QWidget):
         self.password_label.setText(_translate("MainWindow", "PASSWORD"))
         self.login_button.setText(_translate("MainWindow", "LOGIN"))
         self.exit_directory_button.setText(_translate("MainWindow", "<- BACK"))
-        self.add_button.setText(_translate("MainWindow", "ADD"))
+        self.add_file_button.setText(_translate("MainWindow", "ADD FILE"))
+        self.add_directory_button.setText(_translate("MainWindow", "ADD DIR"))
         self.cueent_diretory_label.setText(_translate("MainWindow", "TextLabel"))

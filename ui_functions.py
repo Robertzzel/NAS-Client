@@ -1,6 +1,8 @@
 import os
+import shutil
 import socket
 import ssl
+import tempfile
 from typing import IO
 
 from PySide6 import QtWidgets
@@ -31,7 +33,7 @@ class UIFunctions:
 
     def connectSocket(self):
         try:
-            self.tlsSocket.connect(("192.168.1.5", 4040))
+            self.tlsSocket.connect(("localhost", 4040))
             return True
         except Exception as e:
             return False
@@ -46,7 +48,8 @@ class UIFunctions:
         self.ui.browse_page_button.clicked.connect(self.setBrowserPage)
 
         self.ui.exit_directory_button.clicked.connect(self.goOutDirectory)
-        self.ui.add_button.clicked.connect(self.addFile)
+        self.ui.add_file_button.clicked.connect((lambda checked=True, id=False: self.uploadFileOrDirectory(id)))
+        self.ui.add_directory_button.clicked.connect((lambda checked=True, id=True: self.uploadFileOrDirectory(id)))
 
     def receiveMessage(self):
         message = bytearray()
@@ -62,6 +65,15 @@ class UIFunctions:
         messageLengthSize = self.tlsSocket.recv(10)
         messageSize = int(messageLengthSize.decode())
         receivedBytes = 0
+        status = 1
+
+        while receivedBytes < 1:
+            message = self.tlsSocket.recv(1)
+            receivedBytes += len(message)
+            status = int(message[0])
+
+        if status != 0:
+            return
 
         while receivedBytes < messageSize:
             message = self.tlsSocket.recv(2048)
@@ -73,7 +85,7 @@ class UIFunctions:
         self.tlsSocket.send(msgSize)
         self.tlsSocket.send(message)
 
-    def sendFileMessage(self, fileName: str):
+    def uploadFile(self, fileName: str):
         stats = os.stat(fileName)
 
         self.sendMessage(str(Operations.UploadFile.value).encode())
@@ -88,6 +100,32 @@ class UIFunctions:
                 if not chunk:
                     break
                 self.tlsSocket.send(chunk)
+
+    def uploadDirectory(self, directoryName: str):
+        tmp_archive = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+        tmp_archive.close()
+        fileName = shutil.make_archive(tmp_archive.name, 'zip', directoryName)
+
+        self.sendMessage(str(Operations.UploadDirectory.value).encode())
+        self.sendMessage(directoryName.split("/")[-1].encode())
+
+        stats = os.stat(fileName)
+        msgSize = str(stats.st_size).rjust(10, '0').encode()
+        self.tlsSocket.send(msgSize)
+
+        with open(fileName, "rb") as f:
+            while True:
+                chunk = f.read(2048)
+                if not chunk:
+                    break
+                self.tlsSocket.send(chunk)
+
+        msg, status = self.receiveMessage()
+        if status != 0:
+            print("Nu a mers")
+
+        self.listCurrentDirectory()
+        os.remove(fileName)
 
     def setBrowserPage(self):
         self.ui.stackedWidget.setCurrentIndex(2)
@@ -108,7 +146,6 @@ class UIFunctions:
         sizeLabel.setStyleSheet("color: rgb(161, 168, 166);")
         horizontalLayout.addWidget(sizeLabel)
         sizeLabel.setText(name)
-
 
         downloadButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
         downloadButton.setObjectName("pushButton")
@@ -186,20 +223,6 @@ class UIFunctions:
             if child.layout() and child.layout().objectName() not in exceptions:
                 self.clearLayout(child.layout())
 
-    def addFile(self):
-        selected_file, _ = QFileDialog.getOpenFileName(None, "Select a file", "", "All Files (*);;Text Files (*.txt)")
-        if not selected_file:
-            print("Bad")
-            return
-
-        self.sendFileMessage(selected_file)
-        msg, status = self.receiveMessage()
-        if status != 0:
-            print("Nu a mers")
-            return
-
-        self.listCurrentDirectory()
-
     def listCurrentDirectory(self):
         self.sendMessage(str(Operations.GetFiles.value).encode())
         msg, status = self.receiveMessage()
@@ -226,4 +249,20 @@ class UIFunctions:
                 print(elem)
 
         self.ui.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+    def uploadFileOrDirectory(self, isDir: bool):
+        dialog = QFileDialog()
+        if isDir:
+            dialog.setFileMode(QFileDialog.Directory)
+            dirname = dialog.getExistingDirectory(None, "Select Directory")
+            if dirname == '':
+                return
+            self.uploadDirectory(dirname)
+        else:
+            dialog.setFileMode(QFileDialog.AnyFile)
+            if not dialog.exec():
+                return
+            filename = dialog.selectedFiles()[0]
+            self.uploadFile(filename)
+
 

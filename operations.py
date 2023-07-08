@@ -8,3 +8,4 @@ class Operations(enum.Enum):
     GoInDirectory = 3
     GoOutDirectory = 4
     Delete = 5
+    UploadDirectory = 6
