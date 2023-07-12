@@ -65,6 +65,8 @@ class UIFunctions:
         self.mainWindow.getPathSignal.connect(self.getPathCallback)
         self.mainWindow.listFilesSignal.connect(self.listCurrentDirectory)
 
+        self.ui.lineEdit_3.textChanged.connect(self.filterFiles)
+
     def login(self):
         username = self.ui.lineEdit.text()
         password = self.ui.lineEdit_2.text()
@@ -206,49 +208,52 @@ class UIFunctions:
             if child.layout() and child.layout().objectName() not in exceptions:
                 self.clearLayout(child.layout())
 
-    def listCurrentDirectory(self):
+    def getCurrentFiles(self):
         self.sendMessage(str(Operations.GetFiles.value).encode())
         msg, status = self.receiveMessage()
         if status != 0:
             return
-
         self.currentFiles = [i.split(":") for i in msg.decode().split(";")]
 
+    def displayCurrentFiles(self, files):
         self.resetBrowser()
         scrollAreaWidgetContents = QtWidgets.QWidget()
         verticalLayout = QtWidgets.QVBoxLayout(scrollAreaWidgetContents)
 
-        currentDir = self.currentFiles[0][1]
-        self.ui.cueent_diretory_label.setText(currentDir)
+        self.ui.cueent_diretory_label.setText(files[0][1])
         elementsOnLine = 3
 
         auxLayout = QtWidgets.QHBoxLayout()
-        for i, elem in enumerate(self.currentFiles[1:]):
+        for i, elem in enumerate(files[1:]):
             if elem[0] == "":
                 continue
 
             isDir = elem[0] != "File"
             if isDir:
                 auxLayout.addWidget(get_card(
-                        self.mainWindow,
-                        isDir,
-                        elem[1],
-                        lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
-                        lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id),
-                        lambda checked=True, event=None, id=elem[1]: self.goInDirectory(id)))
+                    self.mainWindow,
+                    isDir,
+                    elem[1],
+                    lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
+                    lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id),
+                    lambda checked=True, event=None, id=elem[1]: self.goInDirectory(id)))
             else:
                 auxLayout.addWidget(get_card(
-                        self.mainWindow,
-                        isDir,
-                        elem[1],
-                        lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
-                        lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id)))
+                    self.mainWindow,
+                    isDir,
+                    elem[1],
+                    lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
+                    lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id)))
 
-            if (i+1) % elementsOnLine == 0 or i == (len(self.currentFiles[1:]) - 1):
+            if (i + 1) % elementsOnLine == 0 or i == (len(files[1:]) - 1):
                 verticalLayout.addLayout(auxLayout)
                 auxLayout = QtWidgets.QHBoxLayout()
 
         self.ui.scrollArea.setWidget(scrollAreaWidgetContents)
+
+    def listCurrentDirectory(self):
+        self.getCurrentFiles()
+        self.displayCurrentFiles(self.currentFiles)
 
     def uploadFileOrDirectory(self, isDir: bool):
         self.mainWindow.getPathSignal.emit(isDir)
@@ -269,5 +274,17 @@ class UIFunctions:
             dialog.setFileMode(QFileDialog.AnyFile)
             path = None if not dialog.exec() else dialog.selectedFiles()[0]
         self.uiQueue.put(path)
+
+    def filterFiles(self, text: str):
+        if text == "":
+            self.displayCurrentFiles(self.currentFiles)
+            return
+
+        text = text.lower()
+        filtered = [self.currentFiles[0]]
+        for entry in self.currentFiles[1:]:
+            if entry != [''] and text in entry[1].lower():
+                filtered.append(entry)
+        self.displayCurrentFiles(filtered)
 
 
