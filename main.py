@@ -1,11 +1,14 @@
 import sys
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow, QApplication
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QMainWindow, QApplication, QLabel, QVBoxLayout, QWidget
 from app import MainUI
 from ui_functions import UIFunctions
 
 
 class AVGui(QMainWindow):
+    getPathSignal = Signal(bool)
+    listFilesSignal = Signal()
     def __init__(self):
         super().__init__()
         self.setWindowFlags(Qt.WindowFlags(Qt.FramelessWindowHint))
@@ -31,7 +34,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     try:
         win = AVGui()
-    except:
+    except Exception as ex:
+        print(ex)
         sys.exit(1)
     win.show()
     sys.exit(app.exec_())

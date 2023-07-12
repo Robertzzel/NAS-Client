@@ -448,7 +448,7 @@
                     <item>
                      <layout class="QVBoxLayout" name="browse_page_layout" stretch="1,20">
                       <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,10,5">
+                       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,0,10,5">
                         <item>
                          <widget class="QPushButton" name="exit_directory_button">
                           <property name="styleSheet">
@@ -460,12 +460,22 @@
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="add_button">
+                         <widget class="QPushButton" name="add_file_button">
                           <property name="styleSheet">
                            <string notr="true">color: rgb(161, 168, 166);</string>
                           </property>
                           <property name="text">
-                           <string>ADD</string>
+                           <string>ADD FILE</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="add_directory_button">
+                          <property name="styleSheet">
+                           <string notr="true">color: rgb(161, 168, 166);</string>
+                          </property>
+                          <property name="text">
+                           <string>ADD DIR</string>
                           </property>
                          </widget>
                         </item>

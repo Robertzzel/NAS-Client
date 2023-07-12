@@ -7,12 +7,14 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 
 class MainUI(QtWidgets.QWidget):
     def __init__(self, MainWindow):
         super().__init__()
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(1000, 600)
         MainWindow.setMinimumSize(QtCore.QSize(1000, 600))
         MainWindow.setMaximumSize(QtCore.QSize(1000, 600))
         MainWindow.setStyleSheet("background-color: rgb(17, 17, 17);")

@@ -1,26 +1,33 @@
 import os
+import queue
 import shutil
 import socket
 import ssl
 import tempfile
 from typing import IO
-
+from concurrent.futures import ThreadPoolExecutor
 from PySide6 import QtWidgets
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from app import MainUI
+from card.card_functions import get_card
 from operations import Operations
 
 
 class UIFunctions:
+
     def __init__(self, mainWindow, ui):
         self.mainWindow = mainWindow
         self.ui: MainUI = ui
         self.setup()
+        self.threadPool = ThreadPoolExecutor(1)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(100)
         self.tlsSocket = ssl.wrap_socket(self.sock, ssl_version=ssl.PROTOCOL_TLSv1_2)
+        self.uiQueue = queue.Queue()
+        self.currentFiles = []
 
         res = self.connectSocket()
         if not res:
@@ -33,7 +40,7 @@ class UIFunctions:
 
     def connectSocket(self):
         try:
-            self.tlsSocket.connect(("192.168.1.5", 4040))
+            self.tlsSocket.connect(("localhost", 4040))
             return True
         except Exception as e:
             return False
@@ -43,17 +50,20 @@ class UIFunctions:
         self.ui.exit_button.clicked.connect(self.mainWindow.close)
         self.ui.minimze_button.clicked.connect(self.mainWindow.showMinimized)
 
-        # side bar buttons
+        # sidebar buttons
         self.ui.login_page_button.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
         self.ui.browse_page_button.clicked.connect(self.setBrowserPage)
-        self.ui.browse_page_button.setEnabled(False)
+        self.ui.browse_page_button.setEnabled(True)
 
         #login page
-        self.ui.login_button.clicked.connect(self.login)
+        self.ui.login_button.clicked.connect(lambda: self.threadPool.submit(self.login))
 
         self.ui.exit_directory_button.clicked.connect(self.goOutDirectory)
-        self.ui.add_file_button.clicked.connect((lambda checked=True, id=False: self.uploadFileOrDirectory(id)))
-        self.ui.add_directory_button.clicked.connect((lambda checked=True, id=True: self.uploadFileOrDirectory(id)))
+        self.ui.add_file_button.clicked.connect((lambda checked=True, id=False: self.threadPool.submit(self.uploadFileOrDirectory, (id))))
+        self.ui.add_directory_button.clicked.connect((lambda checked=True, id=True: self.threadPool.submit(self.uploadFileOrDirectory, (id))))
+
+        self.mainWindow.getPathSignal.connect(self.getPathCallback)
+        self.mainWindow.listFilesSignal.connect(self.listCurrentDirectory)
 
     def login(self):
         username = self.ui.lineEdit.text()
@@ -140,60 +150,17 @@ class UIFunctions:
         if status != 0:
             print("Nu a mers")
 
-        self.listCurrentDirectory()
+        self.mainWindow.listFilesSignal.emit()
         os.remove(fileName)
 
     def setBrowserPage(self):
         self.ui.stackedWidget.setCurrentIndex(2)
-        self.listCurrentDirectory()
-
-    def getRowFromTypeAndName(self, type: str, name: str):
-        horizontalLayout = QtWidgets.QHBoxLayout()
-        horizontalLayout.setObjectName("horizontalLayout")
-
-        durationLabel = QtWidgets.QLabel(parent=self.ui.browse_page)
-        durationLabel.setObjectName("label")
-        durationLabel.setStyleSheet("color: rgb(161, 168, 166);")
-        durationLabel.setText(type)
-        horizontalLayout.addWidget(durationLabel)
-
-        sizeLabel = QtWidgets.QLabel(parent=self.ui.browse_page)
-        sizeLabel.setObjectName("label_2")
-        sizeLabel.setStyleSheet("color: rgb(161, 168, 166);")
-        horizontalLayout.addWidget(sizeLabel)
-        sizeLabel.setText(name)
-
-        downloadButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
-        downloadButton.setObjectName("pushButton")
-        downloadButton.setStyleSheet("color: rgb(161, 168, 166);")
-        downloadButton.setText("DOWNLOAD")
-        downloadButton.clicked.connect(lambda checked=True, id=name: self.downloadFile(id))
-        horizontalLayout.addWidget(downloadButton)
-
-        if type != "File":
-            goInDirectoryButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
-            goInDirectoryButton.setObjectName("deleteVideoButton")
-            goInDirectoryButton.setText("GO IN")
-            goInDirectoryButton.setStyleSheet("color: rgb(161, 168, 166);")
-            goInDirectoryButton.clicked.connect((lambda checked=True, id=name: self.goInDirectory(id)))
-            horizontalLayout.addWidget(goInDirectoryButton)
-
-        deleteButton = QtWidgets.QPushButton(parent=self.ui.browse_page)
-        deleteButton.setObjectName("deleteButton")
-        deleteButton.setText("DELETE")
-        deleteButton.setStyleSheet("color: rgb(161, 168, 166);")
-        deleteButton.clicked.connect((lambda checked=True, id=name: self.deleteFileOrDirectory(id)))
-        horizontalLayout.addWidget(deleteButton)
-
-        return horizontalLayout
+        self.mainWindow.listFilesSignal.emit()
 
     def downloadFile(self, file: str):
-        dialog = QFileDialog()
-        dialog.setFileMode(QFileDialog.FileMode.Directory)
-        if dialog.exec() != QFileDialog.DialogCode.Accepted:
-            return
+        self.mainWindow.getPathSignal.emit(True)
 
-        directory = dialog.selectedFiles()[0] + "/"
+        directory = self.uiQueue.get() + "/"
         self.sendMessage(str(Operations.GetFile.value).encode())
         self.sendMessage(file.encode())
 
@@ -208,7 +175,7 @@ class UIFunctions:
             print("Nu a mers")
             return
 
-        self.listCurrentDirectory()
+        self.mainWindow.listFilesSignal.emit()
 
     def goOutDirectory(self):
         self.sendMessage(str(Operations.GoOutDirectory.value).encode())
@@ -217,7 +184,7 @@ class UIFunctions:
             print("Nu a mers")
             return
 
-        self.listCurrentDirectory()
+        self.mainWindow.listFilesSignal.emit()
 
     def deleteFileOrDirectory(self, name: str):
         self.sendMessage(str(Operations.Delete.value).encode())
@@ -226,7 +193,7 @@ class UIFunctions:
         if status != 0:
             print("Nu a mers")
             return
-        self.listCurrentDirectory()
+        self.mainWindow.listFilesSignal.emit()
 
     def resetBrowser(self):
         self.clearLayout(self.ui.browse_page_layout)
@@ -245,40 +212,62 @@ class UIFunctions:
         if status != 0:
             return
 
+        self.currentFiles = [i.split(":") for i in msg.decode().split(";")]
+
         self.resetBrowser()
+        scrollAreaWidgetContents = QtWidgets.QWidget()
+        verticalLayout = QtWidgets.QVBoxLayout(scrollAreaWidgetContents)
 
-        msgContents = [i.split(":") for i in msg.decode().split(";")]
-
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
-        self.verticalLayout.setObjectName("verticalLayout")
-
-        currentDir = msgContents[0][1]
+        currentDir = self.currentFiles[0][1]
         self.ui.cueent_diretory_label.setText(currentDir)
-        for elem in msgContents[1:]:
+        elementsOnLine = 3
+
+        auxLayout = QtWidgets.QHBoxLayout()
+        for i, elem in enumerate(self.currentFiles[1:]):
             if elem[0] == "":
                 continue
-            try:
-                self.verticalLayout.addLayout(self.getRowFromTypeAndName(elem[0], elem[1]))
-            except:
-                print(elem)
 
-        self.ui.scrollArea.setWidget(self.scrollAreaWidgetContents)
+            isDir = elem[0] != "File"
+            if isDir:
+                auxLayout.addWidget(get_card(
+                        self.mainWindow,
+                        isDir,
+                        elem[1],
+                        lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
+                        lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id),
+                        lambda checked=True, event=None, id=elem[1]: self.goInDirectory(id)))
+            else:
+                auxLayout.addWidget(get_card(
+                        self.mainWindow,
+                        isDir,
+                        elem[1],
+                        lambda checked=True, id=elem[1]: self.threadPool.submit(self.downloadFile, (id)),
+                        lambda checked=True, id=elem[1]: self.deleteFileOrDirectory(id)))
+
+            if (i+1) % elementsOnLine == 0 or i == (len(self.currentFiles[1:]) - 1):
+                verticalLayout.addLayout(auxLayout)
+                auxLayout = QtWidgets.QHBoxLayout()
+
+        self.ui.scrollArea.setWidget(scrollAreaWidgetContents)
 
     def uploadFileOrDirectory(self, isDir: bool):
+        self.mainWindow.getPathSignal.emit(isDir)
+        path = self.uiQueue.get()
+        if isDir:
+            self.uploadDirectory(path)
+        else:
+            self.uploadFile(path)
+
+    def getPathCallback(self, isDir: bool):
         dialog = QFileDialog()
+        path = None
         if isDir:
             dialog.setFileMode(QFileDialog.Directory)
-            dirname = dialog.getExistingDirectory(None, "Select Directory")
-            if dirname == '':
-                return
-            self.uploadDirectory(dirname)
+            path = dialog.getExistingDirectory(None, "Select Directory")
+            path = None if path == '' else path
         else:
             dialog.setFileMode(QFileDialog.AnyFile)
-            if not dialog.exec():
-                return
-            filename = dialog.selectedFiles()[0]
-            self.uploadFile(filename)
+            path = None if not dialog.exec() else dialog.selectedFiles()[0]
+        self.uiQueue.put(path)
 
 
