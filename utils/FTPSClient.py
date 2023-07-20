@@ -1,9 +1,11 @@
+import json
 import os
 import socket
 import ssl
 
 from utils.Codes import StatusCodes
 from utils.Commands import Commands
+from utils.FileDetails import FileDetails
 
 
 def receiveMessage(s):
@@ -50,9 +52,7 @@ def sendFile(s, fileName: str):
 class FTPSClient:
     def __init__(self):
         self.__controlConnectionSocket = None
-        self.__dataTransferConnectionSocket = None
         self.controlConnection = None
-        self.dataTransferConnection = None
 
     def initControlConnection(self, serverHost: str, serverPort: int):
         self.__controlConnectionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -63,9 +63,10 @@ class FTPSClient:
         self.raiseExceptionIfNotSuccessful(status, StatusCodes.ServiceReadyForNewUser)
 
     def newDataTransferConnection(self, serverHost: str, port: int):
-        self.__dataTransferConnectionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.dataTransferConnection = ssl.wrap_socket(self.__controlConnectionSocket, ssl_version=ssl.PROTOCOL_TLSv1_2)
-        self.dataTransferConnection.connect((serverHost, port))
+        dataTransferConnectionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        dataTransferConnection = ssl.wrap_socket(dataTransferConnectionSocket, ssl_version=ssl.PROTOCOL_TLSv1_2)
+        dataTransferConnection.connect((serverHost, port))
+        return dataTransferConnection
 
     def login(self, username: str, password: str):
         sendMessage(self.controlConnection, f"{Commands.USER.value} {username}".encode())
@@ -100,6 +101,46 @@ class FTPSClient:
         status = int(status)
         self.raiseExceptionIfNotSuccessful(status, StatusCodes.RequestedFileActionOkayCompleted)
 
+    def removeDirectory(self, path: str):
+        sendMessage(self.controlConnection, f"{Commands.RMD.value} {path}".encode())
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.PathnameCreated)
+
+    def makeDirectory(self, path: str):
+        sendMessage(self.controlConnection, f"{Commands.MKD.value} {path}".encode())
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.PathnameCreated)
+
+    def list(self, path: str = None):
+        dataTransferConnection = self.__pasv()
+        command = f"{Commands.LIST.value}{'' if path is None else f' {path}'}".encode()
+        sendMessage(self.controlConnection, command)
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.DataConnectionAlreadyOpen)
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
+        files = receiveMessage(dataTransferConnection)
+
+        filesDetails = []
+        for entry in json.loads(files.decode()):
+            filesDetails.append(FileDetails(entry['Name'], entry['Size'], entry['IsDir']))
+
+        return filesDetails
+
+    def __pasv(self):
+        sendMessage(self.controlConnection, f"{Commands.PASV.value}".encode())
+        response = receiveMessage(self.controlConnection)
+        status, _, _, _, ip = response.decode().split(" ")
+        self.raiseExceptionIfNotSuccessful(int(status), StatusCodes.EnteringPassiveMode)
+        host0, host1, host2, host3, port0, port1 = ip.split(",")
+        host = "localhost"#f"{host0}.{host1}.{host2}.{host3}"
+        port = int(port0) * 256 + int(port1)
+        return self.newDataTransferConnection(host, port)
+
     def raiseExceptionIfNotSuccessful(self, statusCode: int, successfulStatus: StatusCodes):
         statusCode = StatusCodes(statusCode)
         if statusCode == successfulStatus:
@@ -112,3 +153,5 @@ class FTPSClient:
             raise Exception("File action not taken, " + statusCode.name)
         if statusCode == StatusCodes.RequestedActionNotTaken:
             raise Exception("Action not taken, " + statusCode.name)
+        if statusCode == StatusCodes.CantOpenDataConnection:
+            raise Exception("Cannot open data connection, " + statusCode.name)
