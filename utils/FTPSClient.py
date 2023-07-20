@@ -124,6 +124,8 @@ class FTPSClient:
         status = int(response.decode())
         self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
         files = receiveMessage(dataTransferConnection)
+        if files == bytearray():
+            return []
 
         filesDetails = []
         for entry in json.loads(files.decode()):
