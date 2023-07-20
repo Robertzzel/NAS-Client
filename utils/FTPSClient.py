@@ -113,6 +113,30 @@ class FTPSClient:
         status = int(response.decode())
         self.raiseExceptionIfNotSuccessful(status, StatusCodes.PathnameCreated)
 
+    def removeFile(self, path: str):
+        sendMessage(self.controlConnection, f"{Commands.DELE.value} {path}".encode())
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.PathnameCreated)
+
+    def downloadFile(self, serverFilePath: str, clientFilePath: str):
+        dataTransferConnection = self.__pasv()
+        command = f"{Commands.RETR.value} {serverFilePath}".encode()
+        sendMessage(self.controlConnection, command)
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.DataConnectionAlreadyOpen)
+
+        receiveFile(dataTransferConnection, clientFilePath)
+
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
+
+    def uploadFile(self, fileName: str):
+        dataTransferConnection = self.__pasv()
+
+
     def list(self, path: str = None):
         dataTransferConnection = self.__pasv()
         command = f"{Commands.LIST.value}{'' if path is None else f' {path}'}".encode()
@@ -139,7 +163,7 @@ class FTPSClient:
         status, _, _, _, ip = response.decode().split(" ")
         self.raiseExceptionIfNotSuccessful(int(status), StatusCodes.EnteringPassiveMode)
         host0, host1, host2, host3, port0, port1 = ip.split(",")
-        host = "localhost"#f"{host0}.{host1}.{host2}.{host3}"
+        host = "localhost"  # TODO DONT FORGET THIS  f"{host0}.{host1}.{host2}.{host3}"
         port = int(port0) * 256 + int(port1)
         return self.newDataTransferConnection(host, port)
 
