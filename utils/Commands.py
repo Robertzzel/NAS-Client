@@ -1,0 +1,26 @@
+import enum
+
+
+class Commands(enum.Enum):
+    USER = "USER"
+    PASS = "PASS"
+    CWD = "CWD"
+    CDUP = "CDUP"
+    QUIT = "QUIT"
+    TYPE = "TYPE"
+    RMD = "RMD"
+    MKD = "MKD"
+    PWD = "PWD"
+    PASV = "PASV"
+    LIST = "LIST"
+    STAT = "STAT"
+    HELP = "HELP"
+    RETR = "RETR"
+    STOR = "STOR"
+    STOU = "STOU"
+    RNFR = "RNFR"
+    RNTO = "RNTO"
+    DELE = "DELE"
+    PORT = "PORT"
+    ALLO = "ALLO"
+    NOOP = "NOOP"
