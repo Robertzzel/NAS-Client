@@ -133,9 +133,36 @@ class FTPSClient:
         status = int(response.decode())
         self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
 
-    def uploadFile(self, fileName: str):
+    def uploadFile(self, serverFilePath: str, clientFilePath: str):
         dataTransferConnection = self.__pasv()
+        command = f"{Commands.STOR.value} {serverFilePath}".encode()
+        sendMessage(self.controlConnection, command)
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.DataConnectionAlreadyOpen)
 
+        sendFile(dataTransferConnection, clientFilePath)
+
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
+
+    def uploadFileUnique(self, clientFilePath: str):
+        dataTransferConnection = self.__pasv()
+        command = f"{Commands.STOU.value}".encode()
+        sendMessage(self.controlConnection, command)
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.DataConnectionAlreadyOpen)
+
+        sendFile(dataTransferConnection, clientFilePath)
+
+        response = receiveMessage(self.controlConnection)
+        status, filepath = response.decode().split("\n")
+        status = int(status)
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.ClosingDataConnection)
+
+        return filepath
 
     def list(self, path: str = None):
         dataTransferConnection = self.__pasv()
@@ -167,6 +194,17 @@ class FTPSClient:
         port = int(port0) * 256 + int(port1)
         return self.newDataTransferConnection(host, port)
 
+    def renameFileOrDirectory(self, oldName: str, newName: str):
+        sendMessage(self.controlConnection, f"{Commands.RNFR.value} {oldName}".encode())
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.RequestedFileActionPending)
+
+        sendMessage(self.controlConnection, f"{Commands.RNTO.value} {newName}".encode())
+        response = receiveMessage(self.controlConnection)
+        status = int(response.decode())
+        self.raiseExceptionIfNotSuccessful(status, StatusCodes.RequestedFileActionOkayCompleted)
+
     def raiseExceptionIfNotSuccessful(self, statusCode: int, successfulStatus: StatusCodes):
         statusCode = StatusCodes(statusCode)
         if statusCode == successfulStatus:
@@ -181,3 +219,41 @@ class FTPSClient:
             raise Exception("Action not taken, " + statusCode.name)
         if statusCode == StatusCodes.CantOpenDataConnection:
             raise Exception("Cannot open data connection, " + statusCode.name)
+
+
+if __name__ == "__main__":
+    client = FTPSClient()
+    client.initControlConnection("localhost", 4040)
+    client.login("Robertzzel", "123456")
+    print(client.printWorkingDirectory())
+
+    client.changeWorkingDirectory("./Hello")
+    print(client.printWorkingDirectory())
+
+    client.changeWorkingDirectoryUp()
+    print(client.printWorkingDirectory())
+
+    client.makeDirectory("./NewDir")
+    client.changeWorkingDirectory("./NewDir")
+    print(client.printWorkingDirectory())
+
+    for file in client.list():
+        print(file)
+
+    print("_" * 10)
+
+    client.changeWorkingDirectoryUp()
+    client.removeDirectory("./NewDir")
+    print(client.printWorkingDirectory())
+
+    for file in client.list():
+        print(file)
+
+    client.downloadFile("./PP2.zip", "aici.zip")
+    client.uploadFile("./Reupload", "aici.zip")
+
+    createdFile = client.uploadFileUnique("aici.zip")
+    client.removeFile(createdFile)
+
+    client.renameFileOrDirectory("./Reupload", "./Hello/Reupload2")
+    client.removeFile("./Hello/Reupload2")
