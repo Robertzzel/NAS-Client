@@ -219,6 +219,8 @@ class FTPSClient:
             raise Exception("Action not taken, " + statusCode.name)
         if statusCode == StatusCodes.CantOpenDataConnection:
             raise Exception("Cannot open data connection, " + statusCode.name)
+        if statusCode == StatusCodes.SyntaxErrorParametersArguments:
+            raise Exception("Parameteres not well formed, " + statusCode.name)
 
 
 if __name__ == "__main__":
